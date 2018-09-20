@@ -58,6 +58,8 @@ class OthelloGame(Game):
             return 0
         if b.countDiff(player) > 0:
             return 1
+        if b.countDiff(player) = 0:
+            return 0.001
         return -1
 
     def getCanonicalForm(self, board, player):
