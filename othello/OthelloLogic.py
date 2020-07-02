@@ -33,6 +33,14 @@ class Board():
     # add [][] indexer syntax to the Board
     def __getitem__(self, index): 
         return self.pieces[index]
+    
+    def countEmpties(self):
+        count = 0
+        for y in range(self.n):
+            for x in range(self.n):
+                if self[x][y] == 0:
+                    count += 1
+        return count
 
     def countDiff(self, color):
         """Counts the # pieces of the given color

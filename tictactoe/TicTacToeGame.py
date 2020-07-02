@@ -62,13 +62,13 @@ class TicTacToeGame(Game):
         b.pieces = np.copy(board)
 
         if b.is_win(player):
-            return 1
+            return 1, 1
         if b.is_win(-player):
-            return -1
+            return 1, -1
         if b.has_legal_moves():
-            return 0
+            return  0, 0
         # draw has a very little value 
-        return 1e-4
+        return 1, 0
 
     def getCanonicalForm(self, board, player):
         # return state if player==1, else return -state if player==-1

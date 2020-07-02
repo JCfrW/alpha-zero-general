@@ -1,9 +1,11 @@
 from __future__ import print_function
 import sys
+
 sys.path.append('..')
 from Game import Game
 from .OthelloLogic import Board
 import numpy as np
+import endgame
 
 
 class OthelloGame(Game):
@@ -41,7 +43,7 @@ class OthelloGame(Game):
         b.pieces = np.copy(board)
         legalMoves =  b.get_legal_moves(player)
         if len(legalMoves)==0:
-            valids[-1]=1
+            valids[self.n * self.n]=1
             return np.array(valids)
         for x, y in legalMoves:
             valids[self.n*x+y]=1
@@ -52,16 +54,34 @@ class OthelloGame(Game):
         # player = 1
         b = Board(self.n)
         b.pieces = np.copy(board)
+        
+        if b.countEmpties() < 14:
+            s = ""
+            for y in range(self.n):
+                for x in range(self.n):
+                    piece = board[y][x]    
+                    if  piece == -player: s += "b"
+                    elif piece == player: s += "w"
+                    else:  s += "."
+            
+            v = endgame.solve(s)
+       
+            if v == 0: return 1e-4
+            else:
+                return v/64.0
+ 
+                    
         if b.has_legal_moves(player):
             return 0
         if b.has_legal_moves(-player):
             return 0
-        if b.countDiff(player) > 0:
-            return 1
-        if b.countDiff(player) == 0:
-            return 0.001
-        return -1
-
+        dif = b.countDiff(player) 
+        if dif == 0:
+            return 1e-4
+        else:
+            return dif/64.0
+        
+        
     def getCanonicalForm(self, board, player):
         # return state if player==1, else return -state if player==-1
         return player*board
@@ -90,20 +110,28 @@ class OthelloGame(Game):
         b = Board(self.n)
         b.pieces = np.copy(board)
         return b.countDiff(player)
+    
+    def string2integer(self, move):
+        if move == "PS" : 
+            return 64
+        ligne = int(move[1]) -1
+        col = ["a", "b", "c", "d", "e", "f", "g", "h"].index(move[0])
+        return ligne * 8 + col
 
 def display(board):
     n = board.shape[0]
-
+    print( "   ",end="")
     for y in range(n):
-        print (y,"|",end="")
+        print (y, end="")
+        print ( " ", end="")
     print("")
     print(" -----------------------")
     for y in range(n):
         print(y, "|",end="")    # print the row #
         for x in range(n):
             piece = board[y][x]    # get the piece to print
-            if piece == -1: print("b ",end="")
-            elif piece == 1: print("W ",end="")
+            if piece == -1: print("W ",end="")
+            elif piece == 1: print("b ",end="")
             else:
                 if x==n:
                     print("-",end="")
@@ -112,3 +140,10 @@ def display(board):
         print("|")
 
     print("   -----------------------")
+    
+def string2integer(move):
+    if move == "PS" : 
+        return 64
+    ligne = int(move[1]) -1
+    col = ["a", "b", "c", "d", "e", "f", "g", "h"].index(move[0])
+    return ligne * 8 + col

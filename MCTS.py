@@ -29,9 +29,10 @@ class MCTS():
                    proportional to Nsa[(s,a)]**(1./temp)
         """
         for i in range(self.args.numMCTSSims):
-            self.search(canonicalBoard)
+            self.search(canonicalBoard, True)
 
         s = self.game.stringRepresentation(canonicalBoard)
+        
         counts = [self.Nsa[(s,a)] if (s,a) in self.Nsa else 0 for a in range(self.game.getActionSize())]
 
         if temp==0:
@@ -39,13 +40,18 @@ class MCTS():
             probs = [0]*len(counts)
             probs[bestA]=1
             return probs
+        
+        if temp == -1 :
+            bestA = np.argmax(counts)
+            return bestA, self.Qsa[(s,bestA)]
+        
 
         counts = [x**(1./temp) for x in counts]
         probs = [x/float(sum(counts)) for x in counts]
         return probs
 
 
-    def search(self, canonicalBoard):
+    def search(self, canonicalBoard, root = False):
         """
         This function performs one iteration of MCTS. It is recursively called
         till a leaf node is found. The action chosen at each node is one that
@@ -69,13 +75,16 @@ class MCTS():
 
         if s not in self.Es:
             self.Es[s] = self.game.getGameEnded(canonicalBoard, 1)
+            
         if self.Es[s]!=0:
             # terminal node
             return -self.Es[s]
 
+        
         if s not in self.Ps:
             # leaf node
             self.Ps[s], v = self.nnet.predict(canonicalBoard)
+
             valids = self.game.getValidMoves(canonicalBoard, 1)
             self.Ps[s] = self.Ps[s]*valids      # masking invalid moves
             sum_Ps_s = np.sum(self.Ps[s])
@@ -90,6 +99,21 @@ class MCTS():
                 self.Ps[s] = self.Ps[s] + valids
                 self.Ps[s] /= np.sum(self.Ps[s])
 
+            # In selfplay add some noise at the root
+            if root == True:
+                nb_legals = np.sum(valids)
+                noise = np.random.dirichlet([0.5] * nb_legals)
+                
+                noise_index = 0
+              
+                for a in range(self.game.getActionSize()):
+                    if valids[a]==0:
+                        continue
+                    self.Ps[s][a] = (1 - 0.25) * self.Ps[s][a] + 0.25 * noise[noise_index]
+                    noise_index = noise_index + 1
+                    if noise_index == nb_legals:
+                        break
+                
             self.Vs[s] = valids
             self.Ns[s] = 0
             return -v

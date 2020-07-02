@@ -1,12 +1,14 @@
-import numpy as np
+
 from pytorch_classification.utils import Bar, AverageMeter
+from random import randint
 import time
+from networkx.generators import line
 
 class Arena():
     """
     An Arena class where any 2 agents can be pit against each other.
     """
-    def __init__(self, player1, player2, game, display=None):
+    def __init__(self, player1, player2, game, display=None, book=None):
         """
         Input:
             player 1,2: two functions that takes board as input, return action
@@ -22,6 +24,7 @@ class Arena():
         self.player2 = player2
         self.game = game
         self.display = display
+        self.book = book
 
     def playGame(self, verbose=False):
         """
@@ -37,13 +40,39 @@ class Arena():
         curPlayer = 1
         board = self.game.getInitBoard()
         it = 0
+        prevAction = -1 
+        
+        if self.book != None :
+            line = self.book[randint(0, len(self.book))]
+                
+            # Specialized for Othello Sorry
+            for it in range(len(line)//2):
+                if verbose:
+                    assert(self.display)
+                    print("Turn ", str(it), "Player ", str(curPlayer))
+                    self.display(board)
+                move = line[it*2:it*2+2]
+                print ("book move ", move)
+                             
+                it += 1
+                players[0].force_play(self.game.getCanonicalForm(board, curPlayer), move)
+                players[2].force_play(self.game.getCanonicalForm(board, curPlayer), move)
+                valids = self.game.getValidMoves(self.game.getCanonicalForm(board, curPlayer),1)
+                action = self.game.string2integer(move)
+                if valids[action]==0:
+                    print(action)
+                    assert valids[action] >0
+                board, curPlayer = self.game.getNextState(board, curPlayer, action)
+          
+                  
         while self.game.getGameEnded(board, curPlayer)==0:
-            it+=1
+            it += 1
             if verbose:
                 assert(self.display)
                 print("Turn ", str(it), "Player ", str(curPlayer))
                 self.display(board)
-            action = players[curPlayer+1](self.game.getCanonicalForm(board, curPlayer))
+            action = players[curPlayer+1].play(self.game.getCanonicalForm(board, curPlayer), prevAction)
+            prevAction = action
 
             valids = self.game.getValidMoves(self.game.getCanonicalForm(board, curPlayer),1)
 
@@ -55,6 +84,9 @@ class Arena():
             assert(self.display)
             print("Game over: Turn ", str(it), "Result ", str(self.game.getGameEnded(board, 1)))
             self.display(board)
+        self.player1.endgame()
+        self.player2.endgame()
+
         return self.game.getGameEnded(board, 1)
 
     def playGames(self, num, verbose=False):
@@ -79,9 +111,9 @@ class Arena():
         draws = 0
         for _ in range(num):
             gameResult = self.playGame(verbose=verbose)
-            if gameResult==1:
+            if gameResult> 0.001:
                 oneWon+=1
-            elif gameResult==-1:
+            elif gameResult < -0.001:
                 twoWon+=1
             else:
                 draws+=1
@@ -97,9 +129,9 @@ class Arena():
         
         for _ in range(num):
             gameResult = self.playGame(verbose=verbose)
-            if gameResult==-1:
+            if gameResult< 0:
                 oneWon+=1                
-            elif gameResult==1:
+            elif gameResult> 0:
                 twoWon+=1
             else:
                 draws+=1

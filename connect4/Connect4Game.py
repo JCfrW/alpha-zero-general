@@ -42,7 +42,7 @@ class Connect4Game(Game):
                 # draw has very little value.
                 return 1e-4
             elif winstate.winner == player:
-                return +1
+                return 1
             elif winstate.winner == -player:
                 return -1
             else:
@@ -57,7 +57,7 @@ class Connect4Game(Game):
 
     def getSymmetries(self, board, pi):
         """Board is left/right board symmetric"""
-        return [(board, pi), (board[:, ::-1], pi[::-1])]
+        return [(board, pi), (board[:, ::-1], pi)]
 
     def stringRepresentation(self, board):
         return str(self._base_board.with_np_pieces(np_pieces=board))
